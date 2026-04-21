@@ -3,6 +3,12 @@ export type SuggestionBatch = {
     suggestions: Suggestion[];
 }
 
+export type TranscriptEntry = {
+    id: string;
+    timestamp: string;
+    text: string;
+}
+
 export type Suggestion = {
     type: 'question to ask' | 'talking point' | 'answer' | 'fact-check';
     text: string;

@@ -1,9 +1,9 @@
+import { useState } from 'react';
+
 type SettingsModalProps = {
   isOpen: boolean;
   groqkey: string;
-  model: string;
   onGroqkeyChange: (value: string) => void;
-  onModelChange: (value: string) => void;
   onClose: () => void;
   onSave: () => void;
 };
@@ -11,9 +11,7 @@ type SettingsModalProps = {
 export default function SettingsModal({
   isOpen,
   groqkey,
-  model,
   onGroqkeyChange,
-  onModelChange,
   onClose,
   onSave,
 }: SettingsModalProps) {
@@ -38,20 +36,6 @@ export default function SettingsModal({
               value={groqkey}
               onChange={(event) => onGroqkeyChange(event.target.value)}
               placeholder="Enter your API key"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="model">
-              Model
-            </label>
-            <input
-              id="model"
-              type="text"
-              value={model}
-              onChange={(event) => onModelChange(event.target.value)}
-              placeholder="e.g. llama-3.1-8b-instant"
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
             />
           </div>

@@ -17,6 +17,7 @@ export default function MicTranscriptPanel({
   const TRANSCRIPT_CHUNK_MS = 30_000;
   const [isListening, setIsListening] = useState(false);
   const hasGroqKey = groqApiKey.trim().length > 0;
+  const missingKeyMessage = 'Add your Groq API key in Settings to start recording.';
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -116,6 +117,7 @@ export default function MicTranscriptPanel({
     const formData = new FormData();
     formData.append('file', blob, 'recording.webm');
     formData.append('model', 'whisper-large-v3');
+    formData.append('language', 'en');
 
     const result = await axios.post(
       'https://api.groq.com/openai/v1/audio/transcriptions',
@@ -163,6 +165,7 @@ export default function MicTranscriptPanel({
         </button>
         <p className="text-sm text-gray-500">{isListening ? 'Recording' : 'Not recording'}</p>
       </div>
+      {!hasGroqKey && <p className="text-sm text-red-600">{missingKeyMessage}</p>}
       <div
         ref={transcriptContainerRef}
         className="flex min-h-0 max-h-full flex-col gap-2 overflow-y-auto rounded-md border p-3"

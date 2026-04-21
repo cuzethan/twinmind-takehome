@@ -13,7 +13,6 @@ export default function App() {
 
   const [groqkey, setGroqkey] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [model, setModel] = useState('llama-3.1-8b-instant');
 
   const [transcriptEntries, setTranscriptEntries] = useState<
     { id: string; timestamp: string; text: string }[]
@@ -22,11 +21,12 @@ export default function App() {
   const [suggestionBatches, setSuggestionBatches] = useState<SuggestionBatch[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [externalChatMessage, setExternalChatMessage] = useState<string | null>(null);
   const [timerSeconds, setTimerSeconds] = useState(SUGGESTION_INTERVAL_SECONDS);
   const [suggestionsTimerPaused, setSuggestionsTimerPaused] = useState(true);
   const [suggestionsTimerCycle, setSuggestionsTimerCycle] = useState(0);
 
-  useEffect(() => {
+  useEffect(() => { // timer to refresh suggestions
     const intervalId = window.setInterval(() => {
       if (suggestionsTimerPaused) {
         return;
@@ -46,18 +46,8 @@ export default function App() {
     };
   }, [suggestionsTimerPaused]);
 
-  const openSettings = () => {
-    setIsSettingsOpen(true);
-  };
-
-  const closeSettings = () => {
-    setIsSettingsOpen(false);
-  };
-
   const saveSettings = () => {
     setGroqkey(groqkey);
-    setModel(model);
-    console.log(groqkey, model);
     setIsSettingsOpen(false);
   };
 
@@ -86,14 +76,14 @@ export default function App() {
     <div className="app flex flex-col h-screen">
       <header className="appHeader flex justify-end gap-2 p-2">
         <button type="button" onClick={onExportSession} className="bg-blue-500 text-white p-2 rounded-md cursor-pointer">Export</button>
-        <button type="button" onClick={openSettings} className="bg-blue-500 text-white p-2 rounded-md cursor-pointer">Settings</button>
+        <button type="button" onClick={() => setIsSettingsOpen(true)} className="bg-blue-500 text-white p-2 rounded-md cursor-pointer">Settings</button>
       </header>
 
       <main className="columnsContainer flex min-h-0 flex-1 gap-2 p-2 w-full">
         <Column title="Mic & Transcript">
-          <MicTranscriptPanel 
-            groqApiKey={groqkey} 
-            transcriptEntries={transcriptEntries} 
+          <MicTranscriptPanel
+            groqApiKey={groqkey}
+            transcriptEntries={transcriptEntries}
             setTranscriptEntries={setTranscriptEntries}
             setSuggestionsTimerPaused={setSuggestionsTimerPaused}
           />
@@ -108,11 +98,12 @@ export default function App() {
         >
           <LiveSuggestionsPanel
             groqApiKey={groqkey}
-            latestTranscript={transcriptEntries[transcriptEntries.length - 1]}
+            transcriptEntries={transcriptEntries}
             suggestionsBatch={suggestionBatches}
             setSuggestionBatches={setSuggestionBatches}
             suggestionsTimerCycle={suggestionsTimerCycle}
             onReloadTimerReset={() => setTimerSeconds(SUGGESTION_INTERVAL_SECONDS)}
+            onSuggestionClick={(suggestion) => setExternalChatMessage(suggestion.text)}
           />
         </Column>
         <Column title="Chat">
@@ -122,6 +113,8 @@ export default function App() {
             setChatMessages={setChatMessages}
             isChatLoading={isChatLoading}
             setIsChatLoading={setIsChatLoading}
+            externalMessageToSend={externalChatMessage}
+            onExternalMessageHandled={() => setExternalChatMessage(null)}
           />
         </Column>
       </main>
@@ -129,10 +122,8 @@ export default function App() {
       <SettingsModal
         isOpen={isSettingsOpen}
         groqkey={groqkey}
-        model={model}
         onGroqkeyChange={setGroqkey}
-        onModelChange={setModel}
-        onClose={closeSettings}
+        onClose={() => setIsSettingsOpen(false)}
         onSave={saveSettings}
       />
     </div>

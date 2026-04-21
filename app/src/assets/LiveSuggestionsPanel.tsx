@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef } from 'react';
-import type { Suggestion, SuggestionBatch } from '../types';
+import type { Suggestion, SuggestionBatch, TranscriptEntry } from '../types';
 import {
   buildLiveSuggestionsUserPrompt,
-  LIVE_SUGGESTIONS_SYSTEM_PROMPT,
+  DEFAULT_LIVE_SUGGESTIONS_CONTEXT_WINDOW,
+  DEFAULT_LIVE_SUGGESTIONS_SYSTEM_PROMPT,
 } from '../prompts/liveSuggestions';
 import SuggestionBatchSection from './SuggestionBatchSection';
 
@@ -10,11 +11,12 @@ const SUGGESTION_TYPES = ['question to ask', 'talking point', 'answer', 'fact-ch
 
 type LiveSuggestionsPanelProps = {
   groqApiKey: string;
-  latestTranscript?: { id: string; timestamp: string; text: string };
+  transcriptEntries: TranscriptEntry[];
   suggestionsBatch: SuggestionBatch[];
   setSuggestionBatches: React.Dispatch<React.SetStateAction<SuggestionBatch[]>>;
   suggestionsTimerCycle: number;
   onReloadTimerReset: () => void;
+  onSuggestionClick: (suggestion: Suggestion) => void;
 };
 
 type SuggestionsResponse = {
@@ -85,18 +87,20 @@ function appendSuggestionBatch(
 
 export default function LiveSuggestionsPanel({
   groqApiKey,
-  latestTranscript,
+  transcriptEntries,
   suggestionsBatch,
   setSuggestionBatches,
   suggestionsTimerCycle,
   onReloadTimerReset,
+  onSuggestionClick,
 }: LiveSuggestionsPanelProps) {
   const isRequestInFlightRef = useRef(false);
   const lastTriggeredTranscriptIdRef = useRef<string | null>(null);
   const suggestionsListRef = useRef<HTMLDivElement | null>(null);
+  const latestTranscript = transcriptEntries[transcriptEntries.length - 1];
 
   const generateSuggestionsFromTranscript = useCallback(async (source: 'timer' | 'reload') => {
-    
+
     //if the request is already in flight, or the groq api key is not set, or the latest transcript is not set, return
     if (isRequestInFlightRef.current || !groqApiKey || !latestTranscript?.text?.trim()) {
       return;
@@ -121,11 +125,14 @@ export default function LiveSuggestionsPanel({
           messages: [
             {
               role: 'system',
-              content: LIVE_SUGGESTIONS_SYSTEM_PROMPT,
+              content: DEFAULT_LIVE_SUGGESTIONS_SYSTEM_PROMPT,
             },
             {
               role: 'user',
-              content: buildLiveSuggestionsUserPrompt(latestTranscript.text),
+              content: buildLiveSuggestionsUserPrompt(
+                transcriptEntries,
+                DEFAULT_LIVE_SUGGESTIONS_CONTEXT_WINDOW
+              ),
             },
           ],
           temperature: 0.4,
@@ -178,6 +185,7 @@ export default function LiveSuggestionsPanel({
             key={`${batch.timestamp}-${index}`}
             batch={batch}
             batchNumber={suggestionsBatch.length - index}
+            onSuggestionClick={onSuggestionClick}
           />
         ))}
       </div>
