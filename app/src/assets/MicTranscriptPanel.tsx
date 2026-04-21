@@ -3,24 +3,22 @@ import axios from 'axios';
 
 type MicTranscriptPanelProps = {
   groqApiKey: string;
+  transcriptEntries: { id: string; timestamp: string; text: string }[];
+  setTranscriptEntries: React.Dispatch<React.SetStateAction<{ id: string; timestamp: string; text: string }[]>>;
 };
 
-export default function MicTranscriptPanel({ groqApiKey }: MicTranscriptPanelProps) {
+export default function MicTranscriptPanel({ groqApiKey, transcriptEntries, setTranscriptEntries }: MicTranscriptPanelProps) {
   const [isListening, setIsListening] = useState(false);
-  const [transcriptEntries, setTranscriptEntries] = useState<
-    { id: string; timestamp: string; text: string }[]
-  >([]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const transcriptContainerRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (!transcriptContainerRef.current) {
-      return;
+  useEffect(() => { //scrolls to the bottom of the transcript container when new entries are added  
+    if (transcriptContainerRef.current) {
+      transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
     }
-    transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
-  }, [transcriptEntries]);
+  }, [transcriptEntries.length]);
 
   const handleClick = () => {
     if (isListening) {
