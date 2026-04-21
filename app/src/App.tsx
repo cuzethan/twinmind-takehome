@@ -61,9 +61,31 @@ export default function App() {
     setIsSettingsOpen(false);
   };
 
+  const onExportSession = () => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      session: {
+        transcriptEntries,
+        suggestionBatches,
+        chatMessages,
+      },
+    };
+    const json = JSON.stringify(payload, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `session-export-${new Date().toISOString()}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="app flex flex-col h-screen">
       <header className="appHeader flex justify-end gap-2 p-2">
+        <button type="button" onClick={onExportSession} className="bg-blue-500 text-white p-2 rounded-md cursor-pointer">Export</button>
         <button type="button" onClick={openSettings} className="bg-blue-500 text-white p-2 rounded-md cursor-pointer">Settings</button>
       </header>
 

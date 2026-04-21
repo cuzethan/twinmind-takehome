@@ -10,7 +10,11 @@ function SectionCard({ suggestion }: { suggestion: Suggestion }) {
     console.log('Sending suggestion to chat:', suggestion);
   }
   return (
-    <button onClick={() => sendSuggestionToChat(suggestion)} className="border border-gray-300 rounded-md p-2 w-full">
+    <button
+      onClick={() => sendSuggestionToChat(suggestion)}
+      className="w-full rounded-md border border-gray-300 p-2 text-left cursor-pointer"
+    >
+      <p className="mb-1 text-xs font-semibold uppercase text-gray-500">{suggestion.type}</p>
       <p>{suggestion.text}</p>
     </button>
   );
@@ -18,10 +22,12 @@ function SectionCard({ suggestion }: { suggestion: Suggestion }) {
 
 export default function SuggestionBatchSection({ batch, batchNumber }: SuggestionBatchSectionProps) {
   return (
-    <div>
-      {batch.suggestions.map((suggestion, index) => {
+    <div className="mb-4">
+      <div className="space-y-2">
+        {batch.suggestions.map((suggestion, index) => {
         return <SectionCard key={`${batch.timestamp}-${suggestion.type}-${index}`} suggestion={suggestion} />
-      })}
+        })}
+      </div>
       <p>Batch {batchNumber} - {batch.timestamp}</p>
     </div>
   );
