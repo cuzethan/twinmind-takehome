@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Column from './assets/Column';
 import SettingsModal from './assets/SettingsModal';
 import MicTranscriptPanel from './assets/MicTranscriptPanel';
@@ -9,6 +9,7 @@ import type { ChatMessage, SuggestionBatch } from './types';
 import './index.css'
 
 export default function App() {
+  const SUGGESTION_INTERVAL_SECONDS = 30;
 
   const [groqkey, setGroqkey] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -21,6 +22,29 @@ export default function App() {
   const [suggestionBatches, setSuggestionBatches] = useState<SuggestionBatch[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [timerSeconds, setTimerSeconds] = useState(SUGGESTION_INTERVAL_SECONDS);
+  const [suggestionsTimerPaused, setSuggestionsTimerPaused] = useState(true);
+  const [suggestionsTimerCycle, setSuggestionsTimerCycle] = useState(0);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      if (suggestionsTimerPaused) {
+        return;
+      }
+      setTimerSeconds((prev) => {
+        if (prev <= 1) {
+          setSuggestionsTimerCycle((currentCycle) => currentCycle + 1);
+          return SUGGESTION_INTERVAL_SECONDS;
+        }
+
+        return prev - 1;
+      });
+    }, 1_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [suggestionsTimerPaused]);
 
   const openSettings = () => {
     setIsSettingsOpen(true);
@@ -45,13 +69,28 @@ export default function App() {
 
       <main className="columnsContainer flex min-h-0 flex-1 gap-2 p-2 w-full">
         <Column title="Mic & Transcript">
-          <MicTranscriptPanel groqApiKey={groqkey} transcriptEntries={transcriptEntries} setTranscriptEntries={setTranscriptEntries} />
+          <MicTranscriptPanel 
+            groqApiKey={groqkey} 
+            transcriptEntries={transcriptEntries} 
+            setTranscriptEntries={setTranscriptEntries}
+            setSuggestionsTimerPaused={setSuggestionsTimerPaused}
+          />
         </Column>
-        <Column title="Live Suggestions">
+        <Column
+          title="Live Suggestions"
+          titleRight={
+            <span className="rounded bg-gray-200 px-2 py-1 text-xs text-gray-700">
+              auto-refreshes in {timerSeconds}s
+            </span>
+          }
+        >
           <LiveSuggestionsPanel
-          latestTranscript={transcriptEntries[transcriptEntries.length - 1]}
-          suggestionsBatch={suggestionBatches}
-          setSuggestionBatches={setSuggestionBatches}
+            groqApiKey={groqkey}
+            latestTranscript={transcriptEntries[transcriptEntries.length - 1]}
+            suggestionsBatch={suggestionBatches}
+            setSuggestionBatches={setSuggestionBatches}
+            suggestionsTimerCycle={suggestionsTimerCycle}
+            onReloadTimerReset={() => setTimerSeconds(SUGGESTION_INTERVAL_SECONDS)}
           />
         </Column>
         <Column title="Chat">

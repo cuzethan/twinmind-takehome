@@ -5,20 +5,39 @@ type MicTranscriptPanelProps = {
   groqApiKey: string;
   transcriptEntries: { id: string; timestamp: string; text: string }[];
   setTranscriptEntries: React.Dispatch<React.SetStateAction<{ id: string; timestamp: string; text: string }[]>>;
+  setSuggestionsTimerPaused: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-export default function MicTranscriptPanel({ groqApiKey, transcriptEntries, setTranscriptEntries }: MicTranscriptPanelProps) {
+export default function MicTranscriptPanel({
+  groqApiKey,
+  transcriptEntries,
+  setTranscriptEntries,
+  setSuggestionsTimerPaused,
+}: MicTranscriptPanelProps) {
+  const TRANSCRIPT_CHUNK_MS = 30_000;
   const [isListening, setIsListening] = useState(false);
+  const hasGroqKey = groqApiKey.trim().length > 0;
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const transcriptContainerRef = useRef<HTMLDivElement | null>(null);
+  const shouldKeepRecordingRef = useRef(false);
+  const chunkStopTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => { //scrolls to the bottom of the transcript container when new entries are added  
     if (transcriptContainerRef.current) {
       transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
     }
   }, [transcriptEntries.length]);
+
+  useEffect(() => {
+    return () => {
+      if (chunkStopTimeoutRef.current !== null) {
+        window.clearTimeout(chunkStopTimeoutRef.current);
+      }
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
 
   const handleClick = () => {
     if (isListening) {
@@ -29,9 +48,48 @@ export default function MicTranscriptPanel({ groqApiKey, transcriptEntries, setT
   };
 
   const startRecording = async () => {
+    if (!hasGroqKey) {
+      return;
+    }
+
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     streamRef.current = stream;
+    shouldKeepRecordingRef.current = true;
 
+    startMediaRecorder(stream);
+
+    setIsListening(true);
+    setSuggestionsTimerPaused(false);
+  };
+
+  const stopRecording = () => {
+    shouldKeepRecordingRef.current = false;
+    if (chunkStopTimeoutRef.current !== null) {
+      window.clearTimeout(chunkStopTimeoutRef.current);
+      chunkStopTimeoutRef.current = null;
+    }
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setIsListening(false);
+    setSuggestionsTimerPaused(true);
+  };
+
+  const scheduleChunkStop = () => {
+    if (chunkStopTimeoutRef.current !== null) {
+      window.clearTimeout(chunkStopTimeoutRef.current);
+    }
+
+    chunkStopTimeoutRef.current = window.setTimeout(() => {
+      if (mediaRecorderRef.current?.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+    }, TRANSCRIPT_CHUNK_MS);
+  };
+
+  const startMediaRecorder = (stream: MediaStream) => {
     const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
     mediaRecorderRef.current = mediaRecorder;
 
@@ -42,14 +100,16 @@ export default function MicTranscriptPanel({ groqApiKey, transcriptEntries, setT
       sendToWhisper(event.data);
     };
 
-    mediaRecorder.start(30_000);
-    setIsListening(true);
-  };
+    mediaRecorder.onstop = () => {
+      if (!shouldKeepRecordingRef.current) {
+        return;
+      }
 
-  const stopRecording = () => {
-    mediaRecorderRef.current?.stop();
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    setIsListening(false);
+      startMediaRecorder(stream);
+    };
+
+    mediaRecorder.start();
+    scheduleChunkStop();
   };
 
   const sendToWhisper = async (blob: Blob) => {
@@ -96,6 +156,7 @@ export default function MicTranscriptPanel({ groqApiKey, transcriptEntries, setT
           className={`h-16 w-16 rounded-full text-white cursor-pointer transition-colors ${isListening ? 'bg-red-500' : 'bg-blue-500'
             }`}
           onClick={handleClick}
+          disabled={!isListening && !hasGroqKey}
           aria-label={isListening ? 'Stop recording' : 'Start recording'}
         >
           {isListening ? 'Stop' : 'Start'}

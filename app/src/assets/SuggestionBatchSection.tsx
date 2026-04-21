@@ -2,6 +2,7 @@ import type { SuggestionBatch, Suggestion } from '../types';
 
 type SuggestionBatchSectionProps = {
   batch: SuggestionBatch;
+  batchNumber: number;
 }
 
 function SectionCard({ suggestion }: { suggestion: Suggestion }) {
@@ -15,13 +16,13 @@ function SectionCard({ suggestion }: { suggestion: Suggestion }) {
   );
 }
 
-export default function SuggestionBatchSection({ batch }: SuggestionBatchSectionProps) {
+export default function SuggestionBatchSection({ batch, batchNumber }: SuggestionBatchSectionProps) {
   return (
     <div>
-      {batch.suggestions.map((suggestion) => {
-        return <SectionCard key={suggestion.text} suggestion={suggestion} />
+      {batch.suggestions.map((suggestion, index) => {
+        return <SectionCard key={`${batch.timestamp}-${suggestion.type}-${index}`} suggestion={suggestion} />
       })}
-      <p>{batch.timestamp}</p>
+      <p>Batch {batchNumber} - {batch.timestamp}</p>
     </div>
   );
 }
