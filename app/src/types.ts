@@ -1,9 +1,18 @@
 export type SuggestionBatch = {
-timestamp: string;
-suggestions: Suggestion[];
+    timestamp: string;
+    suggestions: Suggestion[];
 }
 
-type Suggestion = {
-type: 'question to ask' | 'talking point' | 'answer' | 'fact-check';
-text: string;
+export type Suggestion = {
+    type: 'question to ask' | 'talking point' | 'answer' | 'fact-check';
+    text: string;
+}
+
+export type ChatRole = 'user' | 'assistant';
+
+export type ChatMessage = {
+    id: string;
+    role: ChatRole;
+    content: string;
+    timestamp: string;
 }

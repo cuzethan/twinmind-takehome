@@ -3,7 +3,8 @@ import Column from './assets/Column';
 import SettingsModal from './assets/SettingsModal';
 import MicTranscriptPanel from './assets/MicTranscriptPanel';
 import LiveSuggestionsPanel from './assets/LiveSuggestionsPanel';
-import type { SuggestionBatch } from './types';
+import ChatPanel from './assets/ChatPanel';
+import type { ChatMessage, SuggestionBatch } from './types';
 
 import './index.css'
 
@@ -18,6 +19,8 @@ export default function App() {
   >([]);
 
   const [suggestionBatches, setSuggestionBatches] = useState<SuggestionBatch[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [isChatLoading, setIsChatLoading] = useState(false);
 
   const openSettings = () => {
     setIsSettingsOpen(true);
@@ -45,13 +48,21 @@ export default function App() {
           <MicTranscriptPanel groqApiKey={groqkey} transcriptEntries={transcriptEntries} setTranscriptEntries={setTranscriptEntries} />
         </Column>
         <Column title="Live Suggestions">
-          <LiveSuggestionsPanel 
+          <LiveSuggestionsPanel
           latestTranscript={transcriptEntries[transcriptEntries.length - 1]}
           suggestionsBatch={suggestionBatches}
           setSuggestionBatches={setSuggestionBatches}
           />
         </Column>
-        <Column title="Column 3" />
+        <Column title="Chat">
+          <ChatPanel
+            groqApiKey={groqkey}
+            chatMessages={chatMessages}
+            setChatMessages={setChatMessages}
+            isChatLoading={isChatLoading}
+            setIsChatLoading={setIsChatLoading}
+          />
+        </Column>
       </main>
 
       <SettingsModal
