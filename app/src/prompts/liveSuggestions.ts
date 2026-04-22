@@ -22,6 +22,21 @@ type TranscriptPromptEntry = {
   text: string;
 };
 
+export type LiveSuggestionsApiMessage = { role: 'system' | 'user'; content: string };
+
+export function buildLiveSuggestionsApiMessages(
+  transcriptEntries: TranscriptPromptEntry[],
+  options: { systemPrompt: string; contextWindow: number }
+): LiveSuggestionsApiMessage[] {
+  return [
+    { role: 'system', content: options.systemPrompt },
+    {
+      role: 'user',
+      content: buildLiveSuggestionsUserPrompt(transcriptEntries, options.contextWindow),
+    },
+  ];
+}
+
 export function buildLiveSuggestionsUserPrompt(
   transcriptEntries: TranscriptPromptEntry[],
   contextWindow: number = DEFAULT_LIVE_SUGGESTIONS_CONTEXT_WINDOW

@@ -1,15 +1,15 @@
 import type { ChatMessage, TranscriptEntry } from '../types';
 
-export const CHAT_CONTEXT_WINDOW = 12;
-export const EXPANDED_ANSWER_CONTEXT_WINDOW = 18;
+export const DEFAULT_CHAT_CONTEXT_WINDOW = 12;
+export const DEFAULT_EXPANDED_ANSWER_CONTEXT_WINDOW = 18;
 
-export const CHAT_SYSTEM_PROMPT = `You are a concise and useful conversation copilot.
+export const DEFAULT_CHAT_SYSTEM_PROMPT = `You are a concise and useful conversation copilot.
 Give direct answers first, then short supporting detail.
 If the user's request is ambiguous, ask one focused follow-up question.
 Use bullet points when it improves clarity.
 Do not invent facts not present in transcript context or user messages.`;
 
-export const SUGGESTION_EXPANSION_SYSTEM_PROMPT = `You are expanding a clicked live suggestion into a strong, ready-to-use response.
+export const DEFAULT_SUGGESTION_EXPANSION_SYSTEM_PROMPT = `You are expanding a clicked live suggestion into a strong, ready-to-use response.
 Produce a polished answer the user can say immediately.
 Prioritize specificity, confidence calibration, and practical wording.
 If useful, include:
@@ -56,13 +56,19 @@ function buildMessagesWithTranscriptContext({
   ];
 }
 
+export type TranscriptAugmentedChatOptions = {
+  systemPrompt: string;
+  contextWindow: number;
+};
+
 export function buildChatMessages(
   chatMessages: ChatMessage[],
-  transcriptEntries: TranscriptEntry[]
+  transcriptEntries: TranscriptEntry[],
+  options: TranscriptAugmentedChatOptions
 ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
   return buildMessagesWithTranscriptContext({
-    systemPrompt: CHAT_SYSTEM_PROMPT,
-    contextWindow: CHAT_CONTEXT_WINDOW,
+    systemPrompt: options.systemPrompt,
+    contextWindow: options.contextWindow,
     chatMessages,
     transcriptEntries,
   });
@@ -70,11 +76,12 @@ export function buildChatMessages(
 
 export function buildSuggestionExpansionMessages(
   chatMessages: ChatMessage[],
-  transcriptEntries: TranscriptEntry[]
+  transcriptEntries: TranscriptEntry[],
+  options: TranscriptAugmentedChatOptions
 ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
   return buildMessagesWithTranscriptContext({
-    systemPrompt: SUGGESTION_EXPANSION_SYSTEM_PROMPT,
-    contextWindow: EXPANDED_ANSWER_CONTEXT_WINDOW,
+    systemPrompt: options.systemPrompt,
+    contextWindow: options.contextWindow,
     chatMessages,
     transcriptEntries,
   });

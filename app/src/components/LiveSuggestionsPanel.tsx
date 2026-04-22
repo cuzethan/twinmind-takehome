@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { Suggestion, SuggestionBatch, TranscriptEntry } from '../types';
-import {
-  buildLiveSuggestionsUserPrompt,
-  DEFAULT_LIVE_SUGGESTIONS_CONTEXT_WINDOW,
-  DEFAULT_LIVE_SUGGESTIONS_SYSTEM_PROMPT,
-} from '../prompts/liveSuggestions';
+import { buildLiveSuggestionsApiMessages } from '../prompts/liveSuggestions';
 import SuggestionBatchSection from './SuggestionBatchSection';
 
 const SUGGESTION_TYPES = ['question to ask', 'talking point', 'answer', 'fact-check'] as const;
@@ -15,6 +11,8 @@ type LiveSuggestionsPanelProps = {
   suggestionsBatch: SuggestionBatch[];
   setSuggestionBatches: React.Dispatch<React.SetStateAction<SuggestionBatch[]>>;
   suggestionsTimerCycle: number;
+  liveSuggestionsSystemPrompt: string;
+  liveSuggestionsContextWindow: number;
   onReloadTimerReset: () => void;
   onSuggestionClick: (suggestion: Suggestion) => void;
 };
@@ -91,6 +89,8 @@ export default function LiveSuggestionsPanel({
   suggestionsBatch,
   setSuggestionBatches,
   suggestionsTimerCycle,
+  liveSuggestionsSystemPrompt,
+  liveSuggestionsContextWindow,
   onReloadTimerReset,
   onSuggestionClick,
 }: LiveSuggestionsPanelProps) {
@@ -122,19 +122,10 @@ export default function LiveSuggestionsPanel({
         },
         body: JSON.stringify({
           model: 'openai/gpt-oss-120b',
-          messages: [
-            {
-              role: 'system',
-              content: DEFAULT_LIVE_SUGGESTIONS_SYSTEM_PROMPT,
-            },
-            {
-              role: 'user',
-              content: buildLiveSuggestionsUserPrompt(
-                transcriptEntries,
-                DEFAULT_LIVE_SUGGESTIONS_CONTEXT_WINDOW
-              ),
-            },
-          ],
+          messages: buildLiveSuggestionsApiMessages(transcriptEntries, {
+            systemPrompt: liveSuggestionsSystemPrompt,
+            contextWindow: liveSuggestionsContextWindow,
+          }),
           temperature: 0.4,
         }),
       });
@@ -151,7 +142,14 @@ export default function LiveSuggestionsPanel({
     } finally {
       isRequestInFlightRef.current = false;
     }
-  }, [groqApiKey, latestTranscript, setSuggestionBatches]);
+  }, [
+    groqApiKey,
+    latestTranscript,
+    liveSuggestionsContextWindow,
+    liveSuggestionsSystemPrompt,
+    setSuggestionBatches,
+    transcriptEntries,
+  ]);
 
   const handleReloadSuggestions = () => {
     void generateSuggestionsFromTranscript('reload');

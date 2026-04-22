@@ -1,32 +1,29 @@
-import { useEffect, useState } from 'react';
-import Column from './assets/Column';
-import SettingsModal from './assets/SettingsModal';
-import MicTranscriptPanel from './assets/MicTranscriptPanel';
-import LiveSuggestionsPanel from './assets/LiveSuggestionsPanel';
-import ChatPanel from './assets/ChatPanel';
-import type { ChatMessage, SuggestionBatch } from './types';
+import { useCallback, useEffect, useState } from 'react';
+import Column from './components/Column';
+import SettingsModal from './components/SettingsModal';
+import MicTranscriptPanel from './components/MicTranscriptPanel';
+import LiveSuggestionsPanel from './components/LiveSuggestionsPanel';
+import ChatPanel from './components/ChatPanel';
+import type { ChatMessage, SuggestionBatch, TranscriptEntry } from './types';
+import { DEFAULT_APP_SETTINGS, type AppSettings } from './config/appSettings';
 
 import './index.css'
 
 export default function App() {
-  const SUGGESTION_INTERVAL_SECONDS = 30;
+  const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
 
-  const [groqkey, setGroqkey] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const [transcriptEntries, setTranscriptEntries] = useState<
-    { id: string; timestamp: string; text: string }[]
-  >([]);
-
+  const [transcriptEntries, setTranscriptEntries] = useState<TranscriptEntry[]>([]);
   const [suggestionBatches, setSuggestionBatches] = useState<SuggestionBatch[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [externalChatMessage, setExternalChatMessage] = useState<string | null>(null);
-  const [timerSeconds, setTimerSeconds] = useState(SUGGESTION_INTERVAL_SECONDS);
+  const [timerSeconds, setTimerSeconds] = useState(DEFAULT_APP_SETTINGS.maxSuggestionsTimerSeconds);
   const [suggestionsTimerPaused, setSuggestionsTimerPaused] = useState(true);
   const [suggestionsTimerCycle, setSuggestionsTimerCycle] = useState(0);
 
-  useEffect(() => { // timer to refresh suggestions
+  useEffect(() => {
     const intervalId = window.setInterval(() => {
       if (suggestionsTimerPaused) {
         return;
@@ -34,7 +31,7 @@ export default function App() {
       setTimerSeconds((prev) => {
         if (prev <= 1) {
           setSuggestionsTimerCycle((currentCycle) => currentCycle + 1);
-          return SUGGESTION_INTERVAL_SECONDS;
+          return appSettings.maxSuggestionsTimerSeconds;
         }
 
         return prev - 1;
@@ -44,12 +41,17 @@ export default function App() {
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [suggestionsTimerPaused]);
+  }, [suggestionsTimerPaused, appSettings.maxSuggestionsTimerSeconds]);
 
-  const saveSettings = () => {
-    setGroqkey(groqkey);
+  const saveSettings = (next: AppSettings) => {
+    setAppSettings(next);
+    setTimerSeconds(next.maxSuggestionsTimerSeconds);
     setIsSettingsOpen(false);
   };
+
+  const handleExternalChatMessageHandled = useCallback(() => {
+    setExternalChatMessage(null);
+  }, []);
 
   const onExportSession = () => {
     const payload = {
@@ -82,7 +84,7 @@ export default function App() {
       <main className="columnsContainer flex min-h-0 flex-1 gap-2 p-2 w-full">
         <Column title="Mic & Transcript">
           <MicTranscriptPanel
-            groqApiKey={groqkey}
+            groqApiKey={appSettings.groqApiKey}
             transcriptEntries={transcriptEntries}
             setTranscriptEntries={setTranscriptEntries}
             setSuggestionsTimerPaused={setSuggestionsTimerPaused}
@@ -97,34 +99,40 @@ export default function App() {
           }
         >
           <LiveSuggestionsPanel
-            groqApiKey={groqkey}
+            groqApiKey={appSettings.groqApiKey}
             transcriptEntries={transcriptEntries}
             suggestionsBatch={suggestionBatches}
             setSuggestionBatches={setSuggestionBatches}
             suggestionsTimerCycle={suggestionsTimerCycle}
-            onReloadTimerReset={() => setTimerSeconds(SUGGESTION_INTERVAL_SECONDS)}
+            liveSuggestionsSystemPrompt={appSettings.liveSuggestionsSystemPrompt}
+            liveSuggestionsContextWindow={appSettings.liveSuggestionsContextWindow}
+            onReloadTimerReset={() => setTimerSeconds(appSettings.maxSuggestionsTimerSeconds)}
             onSuggestionClick={(suggestion) => setExternalChatMessage(suggestion.text)}
           />
         </Column>
         <Column title="Chat">
           <ChatPanel
-            groqApiKey={groqkey}
+            groqApiKey={appSettings.groqApiKey}
+            transcriptEntries={transcriptEntries}
+            chatSystemPrompt={appSettings.chatSystemPrompt}
+            chatContextWindow={appSettings.chatContextWindow}
+            suggestionExpansionSystemPrompt={appSettings.suggestionExpansionSystemPrompt}
+            suggestionExpansionContextWindow={appSettings.suggestionExpansionContextWindow}
             chatMessages={chatMessages}
             setChatMessages={setChatMessages}
             isChatLoading={isChatLoading}
             setIsChatLoading={setIsChatLoading}
             externalMessageToSend={externalChatMessage}
-            onExternalMessageHandled={() => setExternalChatMessage(null)}
+            onExternalMessageHandled={handleExternalChatMessageHandled}
           />
         </Column>
       </main>
 
       <SettingsModal
         isOpen={isSettingsOpen}
-        groqkey={groqkey}
-        onGroqkeyChange={setGroqkey}
         onClose={() => setIsSettingsOpen(false)}
         onSave={saveSettings}
+        settings={appSettings}
       />
     </div>
   );

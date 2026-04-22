@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ChatMessage } from '../types';
+import type { ChatMessage, TranscriptEntry } from '../types';
+import { buildChatMessages, buildSuggestionExpansionMessages } from '../prompts/chat';
 
 type ChatPanelProps = {
     groqApiKey: string;
+    transcriptEntries: TranscriptEntry[];
+    chatSystemPrompt: string;
+    chatContextWindow: number;
+    suggestionExpansionSystemPrompt: string;
+    suggestionExpansionContextWindow: number;
     chatMessages: ChatMessage[];
     setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
     isChatLoading: boolean;
@@ -13,6 +19,11 @@ type ChatPanelProps = {
 
 export default function ChatPanel({
     groqApiKey,
+    transcriptEntries,
+    chatSystemPrompt,
+    chatContextWindow,
+    suggestionExpansionSystemPrompt,
+    suggestionExpansionContextWindow,
     chatMessages,
     setChatMessages,
     isChatLoading,
@@ -31,7 +42,10 @@ export default function ChatPanel({
         messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }, [chatMessages, isChatLoading]);
 
-    const sendMessage = async (rawContent: string) => {
+    const sendMessage = async (
+        rawContent: string,
+        mode: 'chat' | 'suggestionExpansion' = 'chat',
+    ) => {
         const content = rawContent.trim();
         if (!content || isChatLoading) {
             return;
@@ -54,6 +68,17 @@ export default function ChatPanel({
         setChatMessages(nextMessages);
         setIsChatLoading(true);
 
+        const groqMessages =
+            mode === 'suggestionExpansion'
+                ? buildSuggestionExpansionMessages(nextMessages, transcriptEntries, {
+                      systemPrompt: suggestionExpansionSystemPrompt,
+                      contextWindow: suggestionExpansionContextWindow,
+                  })
+                : buildChatMessages(nextMessages, transcriptEntries, {
+                      systemPrompt: chatSystemPrompt,
+                      contextWindow: chatContextWindow,
+                  });
+
         try {
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
@@ -63,10 +88,7 @@ export default function ChatPanel({
                 },
                 body: JSON.stringify({
                     model: 'openai/gpt-oss-120b',
-                    messages: nextMessages.map((message) => ({
-                        role: message.role,
-                        content: message.content,
-                    })),
+                    messages: groqMessages,
                 }),
             });
 
@@ -97,7 +119,7 @@ export default function ChatPanel({
     };
 
     const handleSend = async () => {
-        await sendMessage(draft);
+        await sendMessage(draft, 'chat');
         setDraft('');
     };
 
@@ -113,7 +135,7 @@ export default function ChatPanel({
             return;
         }
 
-        void sendMessage(externalMessageToSend).finally(() => {
+        void sendMessage(externalMessageToSend, 'suggestionExpansion').finally(() => {
             onExternalMessageHandled();
         });
     }, [externalMessageToSend, onExternalMessageHandled]);
