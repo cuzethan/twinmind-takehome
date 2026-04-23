@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ChatMessage, TranscriptEntry } from '../types';
-import { buildChatMessages, buildSuggestionExpansionMessages } from '../prompts/chat';
+import type { AppSettings } from '../config/appSettings';
+import { buildTranscriptAugmentedChatMessages } from '../config/util';
 
 type ChatPanelProps = {
-    groqApiKey: string;
+    appSettings: AppSettings;
     transcriptEntries: TranscriptEntry[];
-    chatSystemPrompt: string;
-    chatContextWindow: number;
-    suggestionExpansionSystemPrompt: string;
-    suggestionExpansionContextWindow: number;
     chatMessages: ChatMessage[];
     setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
     isChatLoading: boolean;
@@ -18,12 +15,8 @@ type ChatPanelProps = {
 };
 
 export default function ChatPanel({
-    groqApiKey,
+    appSettings,
     transcriptEntries,
-    chatSystemPrompt,
-    chatContextWindow,
-    suggestionExpansionSystemPrompt,
-    suggestionExpansionContextWindow,
     chatMessages,
     setChatMessages,
     isChatLoading,
@@ -50,7 +43,7 @@ export default function ChatPanel({
         if (!content || isChatLoading) {
             return;
         }
-        if (!groqApiKey) {
+        if (!appSettings.groqApiKey) {
             setErrorMessage('Add your Groq API key in Settings first.');
             return;
         }
@@ -70,21 +63,21 @@ export default function ChatPanel({
 
         const groqMessages =
             mode === 'suggestionExpansion'
-                ? buildSuggestionExpansionMessages(nextMessages, transcriptEntries, {
-                      systemPrompt: suggestionExpansionSystemPrompt,
-                      contextWindow: suggestionExpansionContextWindow,
-                  })
-                : buildChatMessages(nextMessages, transcriptEntries, {
-                      systemPrompt: chatSystemPrompt,
-                      contextWindow: chatContextWindow,
-                  });
+                ? buildTranscriptAugmentedChatMessages(nextMessages, transcriptEntries,
+                  appSettings.suggestionExpansionSystemPrompt,
+                  appSettings.suggestionExpansionContextWindow,
+                )
+                : buildTranscriptAugmentedChatMessages(nextMessages, transcriptEntries, 
+                  appSettings.chatSystemPrompt,
+                  appSettings.chatContextWindow,
+                );
 
         try {
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${groqApiKey}`,
+                    Authorization: `Bearer ${appSettings.groqApiKey}`,
                 },
                 body: JSON.stringify({
                     model: 'openai/gpt-oss-120b',

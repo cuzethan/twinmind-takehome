@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { Suggestion, SuggestionBatch, TranscriptEntry } from '../types';
-import { buildLiveSuggestionsApiMessages } from '../prompts/liveSuggestions';
+import type { AppSettings } from '../config/appSettings';
+import { buildLiveSuggestionsApiMessages } from '../config/util';
 import SuggestionBatchSection from './SuggestionBatchSection';
+import axios from 'axios';
 
 const SUGGESTION_TYPES = ['question to ask', 'talking point', 'answer', 'fact-check'] as const;
 
 type LiveSuggestionsPanelProps = {
-  groqApiKey: string;
+  appSettings: AppSettings;
   transcriptEntries: TranscriptEntry[];
   suggestionsBatch: SuggestionBatch[];
   setSuggestionBatches: React.Dispatch<React.SetStateAction<SuggestionBatch[]>>;
-  suggestionsTimerCycle: number;
-  liveSuggestionsSystemPrompt: string;
-  liveSuggestionsContextWindow: number;
+  suggestionsRefreshTick: number;
   onReloadTimerReset: () => void;
   onSuggestionClick: (suggestion: Suggestion) => void;
 };
@@ -84,13 +84,11 @@ function appendSuggestionBatch(
 }
 
 export default function LiveSuggestionsPanel({
-  groqApiKey,
+  appSettings,
   transcriptEntries,
   suggestionsBatch,
   setSuggestionBatches,
-  suggestionsTimerCycle,
-  liveSuggestionsSystemPrompt,
-  liveSuggestionsContextWindow,
+  suggestionsRefreshTick,
   onReloadTimerReset,
   onSuggestionClick,
 }: LiveSuggestionsPanelProps) {
@@ -102,7 +100,7 @@ export default function LiveSuggestionsPanel({
   const generateSuggestionsFromTranscript = useCallback(async (source: 'timer' | 'reload') => {
 
     //if the request is already in flight, or the groq api key is not set, or the latest transcript is not set, return
-    if (isRequestInFlightRef.current || !groqApiKey || !latestTranscript?.text?.trim()) {
+    if (isRequestInFlightRef.current || !appSettings.groqApiKey || !latestTranscript?.text?.trim()) {
       return;
     }
 
@@ -114,27 +112,25 @@ export default function LiveSuggestionsPanel({
     // set the request in flight flag to true
     isRequestInFlightRef.current = true;
     try {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
+      const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+        model: 'openai/gpt-oss-120b',
+        messages: buildLiveSuggestionsApiMessages(transcriptEntries, {
+          systemPrompt: appSettings.liveSuggestionsSystemPrompt,
+          contextWindow: appSettings.liveSuggestionsContextWindow,
+        }),
+        temperature: 0.4,
+      }, {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${groqApiKey}`,
+          Authorization: `Bearer ${appSettings.groqApiKey}`,
         },
-        body: JSON.stringify({
-          model: 'openai/gpt-oss-120b',
-          messages: buildLiveSuggestionsApiMessages(transcriptEntries, {
-            systemPrompt: liveSuggestionsSystemPrompt,
-            contextWindow: liveSuggestionsContextWindow,
-          }),
-          temperature: 0.4,
-        }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Suggestion generation failed with status ${response.status}`);
+      if (response.status !== 200) {
+        throw new Error(`Suggestion generation failed with status ${response.statusText}`);
       }
 
-      const data = (await response.json()) as GroqChatCompletionResponse;
+      const data = response.data as GroqChatCompletionResponse;
       appendSuggestionBatch(data, setSuggestionBatches);
       lastTriggeredTranscriptIdRef.current = latestTranscript.id;
     } catch (error) {
@@ -143,10 +139,10 @@ export default function LiveSuggestionsPanel({
       isRequestInFlightRef.current = false;
     }
   }, [
-    groqApiKey,
+    appSettings.groqApiKey,
+    appSettings.liveSuggestionsContextWindow,
+    appSettings.liveSuggestionsSystemPrompt,
     latestTranscript,
-    liveSuggestionsContextWindow,
-    liveSuggestionsSystemPrompt,
     setSuggestionBatches,
     transcriptEntries,
   ]);
@@ -156,14 +152,15 @@ export default function LiveSuggestionsPanel({
     onReloadTimerReset();
   };
 
+  //generate suggestions from the transcript every time the suggestions refresh tick is not 0
   useEffect(() => {
-    if (suggestionsTimerCycle === 0) {
-      return;
+    //stops initial render from generating suggestions
+    if (suggestionsRefreshTick !== 0) {
+      void generateSuggestionsFromTranscript('timer');
     }
+  }, [generateSuggestionsFromTranscript, suggestionsRefreshTick]);
 
-    void generateSuggestionsFromTranscript('timer');
-  }, [generateSuggestionsFromTranscript, suggestionsTimerCycle]);
-
+  //scroll to the top of the suggestions list when the suggestions batch changes
   useEffect(() => {
     if (suggestionsListRef.current) {
       suggestionsListRef.current.scrollTop = 0;

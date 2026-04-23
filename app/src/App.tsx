@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
+
 import Column from './components/Column';
 import SettingsModal from './components/SettingsModal';
 import MicTranscriptPanel from './components/MicTranscriptPanel';
 import LiveSuggestionsPanel from './components/LiveSuggestionsPanel';
 import ChatPanel from './components/ChatPanel';
+
 import type { ChatMessage, SuggestionBatch, TranscriptEntry } from './types';
 import { DEFAULT_APP_SETTINGS, type AppSettings } from './config/appSettings';
 
@@ -14,30 +16,43 @@ export default function App() {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  // Shared session data consumed across the three columns.
   const [transcriptEntries, setTranscriptEntries] = useState<TranscriptEntry[]>([]);
   const [suggestionBatches, setSuggestionBatches] = useState<SuggestionBatch[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
+  // Chat panel request state plus externally injected message from suggestion clicks.
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [externalChatMessage, setExternalChatMessage] = useState<string | null>(null);
+
+  // Suggestion refresh timer state: countdown, pause/resume, and refresh trigger counter.
   const [timerSeconds, setTimerSeconds] = useState(DEFAULT_APP_SETTINGS.maxSuggestionsTimerSeconds);
   const [suggestionsTimerPaused, setSuggestionsTimerPaused] = useState(true);
-  const [suggestionsTimerCycle, setSuggestionsTimerCycle] = useState(0);
+  const [suggestionsRefreshTick, setSuggestionsRefreshTick] = useState(0);
 
+  // Suggestion refresh timer.
   useEffect(() => {
-    const intervalId = window.setInterval(() => {
+    const tick = () => {
       if (suggestionsTimerPaused) {
         return;
       }
+
+      //setup the timer countdown for the next second
       setTimerSeconds((prev) => {
-        if (prev <= 1) {
-          setSuggestionsTimerCycle((currentCycle) => currentCycle + 1);
-          return appSettings.maxSuggestionsTimerSeconds;
+        const next = prev - 1;
+        if (next > 0) {
+          return next;
         }
 
-        return prev - 1;
-      });
-    }, 1_000);
+        // trigger a new suggestions batch
+        setSuggestionsRefreshTick((tick) => tick + 1);
 
+        //reset the timer countdown to the max suggestions timer seconds
+        return appSettings.maxSuggestionsTimerSeconds;
+      });
+    };
+
+    const intervalId = window.setInterval(tick, 1_000);
     return () => {
       window.clearInterval(intervalId);
     };
@@ -53,6 +68,7 @@ export default function App() {
     setExternalChatMessage(null);
   }, []);
 
+  //for export session data to a JSON file using export button
   const onExportSession = () => {
     const payload = {
       exportedAt: new Date().toISOString(),
@@ -99,25 +115,19 @@ export default function App() {
           }
         >
           <LiveSuggestionsPanel
-            groqApiKey={appSettings.groqApiKey}
+            appSettings={appSettings}
             transcriptEntries={transcriptEntries}
             suggestionsBatch={suggestionBatches}
             setSuggestionBatches={setSuggestionBatches}
-            suggestionsTimerCycle={suggestionsTimerCycle}
-            liveSuggestionsSystemPrompt={appSettings.liveSuggestionsSystemPrompt}
-            liveSuggestionsContextWindow={appSettings.liveSuggestionsContextWindow}
+            suggestionsRefreshTick={suggestionsRefreshTick}
             onReloadTimerReset={() => setTimerSeconds(appSettings.maxSuggestionsTimerSeconds)}
             onSuggestionClick={(suggestion) => setExternalChatMessage(suggestion.text)}
           />
         </Column>
         <Column title="Chat">
           <ChatPanel
-            groqApiKey={appSettings.groqApiKey}
+            appSettings={appSettings}
             transcriptEntries={transcriptEntries}
-            chatSystemPrompt={appSettings.chatSystemPrompt}
-            chatContextWindow={appSettings.chatContextWindow}
-            suggestionExpansionSystemPrompt={appSettings.suggestionExpansionSystemPrompt}
-            suggestionExpansionContextWindow={appSettings.suggestionExpansionContextWindow}
             chatMessages={chatMessages}
             setChatMessages={setChatMessages}
             isChatLoading={isChatLoading}

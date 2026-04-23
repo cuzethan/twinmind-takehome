@@ -1,73 +1,21 @@
-# React + TypeScript + Vite
+# Prompt design notes (draft)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## First iteration
 
-Currently, two official plugins are available:
+This section captures early choices before deeper iteration from real usage and testing.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### Context windows
 
-## React Compiler
+Live suggestions use a **small default context window** (two recent transcript entries). The idea is to anchor the model on what is happening *right now* in the meeting: quick, local nudges rather than a recap of the whole conversation. A wider window would dilute that signal and make suggestions feel less tied to the immediate beat.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Chat and expanded-suggestion flows use a **much larger default window** (fifteen entries). Those paths are meant for richer back-and-forth: answering questions, elaborating a clicked suggestion, and grounding answers in more transcript history. The extra context trades freshness for coherence when the user explicitly asks for depth.
 
-## Expanding the ESLint configuration
+Both values are defaults in settings; they can be tuned per environment or preference.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Default system prompts
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+The bundled default system prompts (live suggestions, chat, and suggestion expansion) were **initially produced with an AI assistant as scaffolding** so the app could be exercised end-to-end without spending a long cycle on copy. They are reasonable starting points, not final product voice; replace or refine them once you have real users and tone requirements.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## NOTE: hard output requirements, on live suggestions: 
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Live suggestion requests append a separate system block with **strict output rules** (see `src/config/util.ts`). In short: the model must return **JSON only** in a fixed shape (`suggestions` array with typed entries), **exactly three** suggestions, a **diverse mix of types** when possible, each **under twenty words**, **concrete and actionable**, avoiding generic filler and **verbatim repetition** of the transcript. If the transcript slice is thin, the model is still asked to produce **best-effort**, grounded suggestions. Those constraints exist so the UI can parse reliably and the on-screen cards stay short and scannable.
