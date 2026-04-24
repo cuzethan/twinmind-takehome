@@ -6,7 +6,7 @@ import MicTranscriptPanel from './components/MicTranscriptPanel';
 import LiveSuggestionsPanel from './components/LiveSuggestionsPanel';
 import ChatPanel from './components/ChatPanel';
 
-import type { ChatMessage, SuggestionBatch, TranscriptEntry } from './types';
+import type { ChatMessage, Suggestion, SuggestionBatch, TranscriptEntry } from './types';
 import { DEFAULT_APP_SETTINGS, type AppSettings } from './config/appSettings';
 
 import './index.css'
@@ -23,7 +23,7 @@ export default function App() {
 
   // Chat panel request state plus externally injected message from suggestion clicks.
   const [isChatLoading, setIsChatLoading] = useState(false);
-  const [externalChatMessage, setExternalChatMessage] = useState<string | null>(null);
+  const [externalSuggestionToSend, setExternalSuggestionToSend] = useState<Suggestion | null>(null);
 
   // Suggestion refresh timer state: countdown, pause/resume, and refresh trigger counter.
   const [timerSeconds, setTimerSeconds] = useState(DEFAULT_APP_SETTINGS.maxSuggestionsTimerSeconds);
@@ -64,8 +64,8 @@ export default function App() {
     setIsSettingsOpen(false);
   };
 
-  const handleExternalChatMessageHandled = useCallback(() => {
-    setExternalChatMessage(null);
+  const handleExternalSuggestionHandled = useCallback(() => {
+    setExternalSuggestionToSend(null);
   }, []);
 
   //for export session data to a JSON file using export button
@@ -121,7 +121,7 @@ export default function App() {
             setSuggestionBatches={setSuggestionBatches}
             suggestionsRefreshTick={suggestionsRefreshTick}
             onReloadTimerReset={() => setTimerSeconds(appSettings.maxSuggestionsTimerSeconds)}
-            onSuggestionClick={(suggestion) => setExternalChatMessage(suggestion.text)}
+            onSuggestionClick={(suggestion) => setExternalSuggestionToSend(suggestion)}
           />
         </Column>
         <Column title="Chat">
@@ -132,8 +132,8 @@ export default function App() {
             setChatMessages={setChatMessages}
             isChatLoading={isChatLoading}
             setIsChatLoading={setIsChatLoading}
-            externalMessageToSend={externalChatMessage}
-            onExternalMessageHandled={handleExternalChatMessageHandled}
+            externalSuggestionToSend={externalSuggestionToSend}
+            onExternalSuggestionHandled={handleExternalSuggestionHandled}
           />
         </Column>
       </main>

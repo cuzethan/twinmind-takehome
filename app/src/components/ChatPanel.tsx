@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ChatMessage, TranscriptEntry } from '../types';
+import type { ChatMessage, Suggestion, TranscriptEntry } from '../types';
 import type { AppSettings } from '../config/appSettings';
 import { buildTranscriptAugmentedChatMessages } from '../config/util';
+import axios from 'axios';
 
 type ChatPanelProps = {
     appSettings: AppSettings;
@@ -10,8 +11,8 @@ type ChatPanelProps = {
     setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
     isChatLoading: boolean;
     setIsChatLoading: React.Dispatch<React.SetStateAction<boolean>>;
-    externalMessageToSend: string | null;
-    onExternalMessageHandled: () => void;
+    externalSuggestionToSend: Suggestion | null;
+    onExternalSuggestionHandled: () => void;
 };
 
 export default function ChatPanel({
@@ -21,8 +22,8 @@ export default function ChatPanel({
     setChatMessages,
     isChatLoading,
     setIsChatLoading,
-    externalMessageToSend,
-    onExternalMessageHandled,
+    externalSuggestionToSend,
+    onExternalSuggestionHandled,
 }: ChatPanelProps) {
     const [draft, setDraft] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
@@ -36,10 +37,10 @@ export default function ChatPanel({
     }, [chatMessages, isChatLoading]);
 
     const sendMessage = async (
-        rawContent: string,
+        data: string | Suggestion,
         mode: 'chat' | 'suggestionExpansion' = 'chat',
     ) => {
-        const content = rawContent.trim();
+        const content = typeof data === 'string' ? data.trim() : data.text.trim();
         if (!content || isChatLoading) {
             return;
         }
@@ -66,6 +67,7 @@ export default function ChatPanel({
                 ? buildTranscriptAugmentedChatMessages(nextMessages, transcriptEntries,
                   appSettings.suggestionExpansionSystemPrompt,
                   appSettings.suggestionExpansionContextWindow,
+                  data as Suggestion,
                 )
                 : buildTranscriptAugmentedChatMessages(nextMessages, transcriptEntries, 
                   appSettings.chatSystemPrompt,
@@ -73,23 +75,21 @@ export default function ChatPanel({
                 );
 
         try {
-            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
+            const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+                model: 'openai/gpt-oss-120b',
+                messages: groqMessages,
+            }, {
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${appSettings.groqApiKey}`,
                 },
-                body: JSON.stringify({
-                    model: 'openai/gpt-oss-120b',
-                    messages: groqMessages,
-                }),
             });
 
-            if (!response.ok) {
+            if (response.status !== 200) {
                 throw new Error('Failed to get assistant response.');
             }
 
-            const data = await response.json();
+            const data = response.data;
             const assistantContent = data.choices?.[0]?.message?.content?.trim();
 
             if (!assistantContent) {
@@ -124,14 +124,14 @@ export default function ChatPanel({
     };
 
     useEffect(() => {
-        if (!externalMessageToSend) {
+        if (!externalSuggestionToSend) {
             return;
         }
 
-        void sendMessage(externalMessageToSend, 'suggestionExpansion').finally(() => {
-            onExternalMessageHandled();
+        void sendMessage(externalSuggestionToSend, 'suggestionExpansion').finally(() => {
+            onExternalSuggestionHandled();
         });
-    }, [externalMessageToSend, onExternalMessageHandled]);
+    }, [externalSuggestionToSend, onExternalSuggestionHandled]);
 
     return (
         <div className="flex h-full min-h-0 flex-col gap-3">

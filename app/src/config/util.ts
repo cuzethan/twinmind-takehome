@@ -1,4 +1,4 @@
-import type { ChatMessage, TranscriptEntry } from '../types';
+import type { ChatMessage, Suggestion, TranscriptEntry } from '../types';
 
 const DEFAULT_EMPTY_TRANSCRIPT_TEXT = 'No transcript context available.';
 
@@ -12,8 +12,7 @@ Hard requirements:
 - Use a diverse mix of types when possible.
 - Keep each suggestion under 20 words.
 - Make each suggestion concrete and directly actionable.
-- Avoid generic advice and avoid repeating transcript wording.
-- If context is weak, still provide best-effort suggestions grounded in what is available.`;
+- Avoid generic advice and avoid repeating transcript wording`;
 
 type TranscriptPromptEntry = Pick<TranscriptEntry, 'timestamp' | 'text'>;
 
@@ -54,13 +53,23 @@ export function buildTranscriptAugmentedChatMessages(
   chatMessages: ChatMessage[],
   transcriptEntries: TranscriptEntry[],
   systemPrompt: string,
-  contextWindow: number
+  contextWindow: number,
+  suggestion?: Suggestion
 ): ApiMessage[] {
   const transcriptContext = buildTranscriptContextBlock(transcriptEntries, contextWindow);
 
+  const expansionUserMessage: ApiMessage = {
+    role: 'user',
+    content: `Expand this suggestion:
+    Type: ${suggestion.type}
+    Suggestion: "${suggestion.text}"
+    
+    Use the transcript context to give a detailed, ready-to-use response.`
+  }
+
   return [
-    { role: 'system', content: systemPrompt },
-    { role: 'system', content: `Recent transcript context:\n${transcriptContext}` },
+    { role: 'system', content: `${systemPrompt}\n\nRecent transcript context:\n${transcriptContext}` },
+    ...(suggestion && [expansionUserMessage]),
     ...chatMessages.map((message) => ({
       role: message.role,
       content: message.content,
@@ -71,12 +80,13 @@ export function buildTranscriptAugmentedChatMessages(
 //build the user prompt for the live suggestions
 function buildLiveSuggestionsUserPrompt(
   transcriptEntries: TranscriptPromptEntry[],
-  contextWindow: number
+  contextWindow: number,
+  transcriptInfo: string
 ): string {
   const recentEntries = getRecentTranscriptEntries(transcriptEntries, contextWindow);
   const transcriptContext = formatTranscriptEntriesForPrompt(recentEntries, '');
 
-  return `Recent transcript context (${recentEntries.length} entries):
+  return `${transcriptInfo} (${recentEntries.length} entries):
 ${transcriptContext}`;
 }
 
@@ -89,7 +99,11 @@ export function buildLiveSuggestionsApiMessages(
     { role: 'system', content: HARD_LIVE_SUGGESTIONS_REQUIREMENTS },
     {
       role: 'user',
-      content: buildLiveSuggestionsUserPrompt(transcriptEntries, options.contextWindow),
+      content: buildLiveSuggestionsUserPrompt(transcriptEntries, options.contextWindow, 'This is the broader context window for the live suggestions.'),
     },
+    {
+      role: 'user',
+      content: buildLiveSuggestionsUserPrompt(transcriptEntries, 2, 'This is the high priority context window for the live suggestions.'),
+    }
   ];
 }
