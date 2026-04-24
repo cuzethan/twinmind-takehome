@@ -54,22 +54,26 @@ export function buildTranscriptAugmentedChatMessages(
   transcriptEntries: TranscriptEntry[],
   systemPrompt: string,
   contextWindow: number,
-  suggestion?: Suggestion
+  suggestion: Suggestion | null
 ): ApiMessage[] {
   const transcriptContext = buildTranscriptContextBlock(transcriptEntries, contextWindow);
 
-  const expansionUserMessage: ApiMessage = {
-    role: 'user',
-    content: `Expand this suggestion:
+  const expansionMessages: ApiMessage[] = suggestion
+    ? [
+        {
+          role: 'user',
+          content: `Expand this suggestion:
     Type: ${suggestion.type}
     Suggestion: "${suggestion.text}"
     
-    Use the transcript context to give a detailed, ready-to-use response.`
-  }
+    Use the transcript context to give a detailed, ready-to-use response.`,
+        },
+      ]
+    : [];
 
   return [
     { role: 'system', content: `${systemPrompt}\n\nRecent transcript context:\n${transcriptContext}` },
-    ...(suggestion && [expansionUserMessage]),
+    ...expansionMessages,
     ...chatMessages.map((message) => ({
       role: message.role,
       content: message.content,

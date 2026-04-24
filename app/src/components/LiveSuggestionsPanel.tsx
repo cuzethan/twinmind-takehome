@@ -93,19 +93,12 @@ export default function LiveSuggestionsPanel({
   onSuggestionClick,
 }: LiveSuggestionsPanelProps) {
   const isRequestInFlightRef = useRef(false);
-  const lastTriggeredTranscriptIdRef = useRef<string | null>(null);
   const suggestionsListRef = useRef<HTMLDivElement | null>(null);
   const latestTranscript = transcriptEntries[transcriptEntries.length - 1];
 
-  const generateSuggestionsFromTranscript = useCallback(async (source: 'timer' | 'reload') => {
-
+  const generateSuggestionsFromTranscript = useCallback(async () => {
     //if the request is already in flight, or the groq api key is not set, or the latest transcript is not set, return
     if (isRequestInFlightRef.current || !appSettings.groqApiKey || !latestTranscript?.text?.trim()) {
-      return;
-    }
-
-    // if the source is the timer and the last triggered transcript id is the same as the latest transcript id, return
-    if (source === 'timer' && lastTriggeredTranscriptIdRef.current === latestTranscript.id) {
       return;
     }
 
@@ -132,7 +125,6 @@ export default function LiveSuggestionsPanel({
 
       const data = response.data as GroqChatCompletionResponse;
       appendSuggestionBatch(data, setSuggestionBatches);
-      lastTriggeredTranscriptIdRef.current = latestTranscript.id;
     } catch (error) {
       console.error('Failed to generate suggestions:', error);
     } finally {
@@ -148,7 +140,7 @@ export default function LiveSuggestionsPanel({
   ]);
 
   const handleReloadSuggestions = () => {
-    void generateSuggestionsFromTranscript('reload');
+    void generateSuggestionsFromTranscript();
     onReloadTimerReset();
   };
 
@@ -156,7 +148,7 @@ export default function LiveSuggestionsPanel({
   useEffect(() => {
     //stops initial render from generating suggestions
     if (suggestionsRefreshTick !== 0) {
-      void generateSuggestionsFromTranscript('timer');
+      void generateSuggestionsFromTranscript();
     }
   }, [generateSuggestionsFromTranscript, suggestionsRefreshTick]);
 

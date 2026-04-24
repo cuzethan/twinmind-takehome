@@ -72,6 +72,7 @@ export default function ChatPanel({
                 : buildTranscriptAugmentedChatMessages(nextMessages, transcriptEntries, 
                   appSettings.chatSystemPrompt,
                   appSettings.chatContextWindow,
+                  null,
                 );
 
         try {
