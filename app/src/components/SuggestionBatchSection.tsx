@@ -11,13 +11,42 @@ type SectionCardProps = {
   onSuggestionClick: (suggestion: Suggestion) => void;
 };
 
+function getSuggestionTypeColors(type: Suggestion['type']) {
+  switch (type) {
+    case 'question to ask':
+      return {
+        badge: 'bg-blue-500/30 text-blue-100',
+      };
+    case 'talking point':
+      return {
+        badge: 'bg-purple-500/30 text-purple-100',
+      };
+    case 'answer':
+      return {
+        badge: 'bg-green-500/30 text-green-100',
+      };
+    case 'fact-check':
+      return {
+        badge: 'bg-yellow-500/30 text-yellow-100',
+      };
+    default:
+      return {
+        badge: 'bg-slate-600 text-white',
+      };
+  }
+}
+
 function SectionCard({ suggestion, onSuggestionClick }: SectionCardProps) {
+  const colors = getSuggestionTypeColors(suggestion.type);
+
   return (
     <button
       onClick={() => onSuggestionClick(suggestion)}
-      className="w-full rounded-md border border-gray-300 p-2 text-left cursor-pointer"
+      className="tm-batch-card"
     >
-      <p className="mb-1 text-xs font-semibold uppercase text-gray-500">{suggestion.type}</p>
+      <p className={`mb-1 inline-block rounded px-2 py-1 text-xs font-semibold uppercase ${colors.badge}`}>
+        {suggestion.type}
+      </p>
       <p>{suggestion.text}</p>
     </button>
   );
@@ -41,7 +70,7 @@ export default function SuggestionBatchSection({
           );
         })}
       </div>
-      <p>Batch {batchNumber} - {batch.timestamp}</p>
+      <p className="tm-muted-meta mt-2 normal-case">Batch {batchNumber} - {batch.timestamp}</p>
     </div>
   );
 }

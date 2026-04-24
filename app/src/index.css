@@ -1,1 +1,73 @@
 @import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-100;
+  }
+}
+
+@layer components {
+  .tm-app-shell {
+    @apply bg-slate-950 text-slate-100;
+  }
+
+  .tm-panel {
+    @apply rounded-md border border-slate-600 bg-slate-900 text-slate-100;
+  }
+
+  .tm-panel-title {
+    @apply text-base font-semibold text-slate-100;
+  }
+
+  .tm-btn-primary {
+    @apply cursor-pointer rounded-md bg-slate-700 px-3 py-2 text-sm text-white transition-colors hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .tm-btn-secondary {
+    @apply cursor-pointer rounded-md border border-slate-500 bg-slate-800 px-3 py-2 text-sm text-white transition-colors hover:bg-slate-700;
+  }
+
+  .tm-batch-card {
+    @apply w-full cursor-pointer rounded-md border border-blue-500 bg-slate-800 p-2 text-left text-white transition-colors hover:bg-slate-700;
+  }
+
+  .tm-surface {
+    @apply rounded-md border border-slate-600 bg-slate-900/80 text-slate-100;
+  }
+
+  .tm-card {
+    @apply rounded-md border border-slate-600 bg-slate-800/80 p-2 text-slate-100;
+  }
+
+  .tm-label {
+    @apply mb-1 block text-sm font-medium text-slate-200;
+  }
+
+  .tm-input {
+    @apply w-full rounded-md border border-slate-500 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-300 focus:border-slate-300;
+  }
+
+  .tm-textarea {
+    @apply min-h-[100px] resize-y font-mono text-xs;
+  }
+
+  .tm-muted-meta {
+    @apply text-xs font-semibold uppercase text-slate-200;
+  }
+
+  .tm-muted-text {
+    @apply text-sm text-slate-200;
+  }
+
+  .tm-chip {
+    @apply rounded bg-slate-600 px-2 py-1 text-xs text-white;
+  }
+
+  .tm-record-active {
+    @apply bg-red-500 hover:bg-red-400;
+  }
+
+  .tm-record-idle {
+    @apply bg-blue-500 hover:bg-blue-400;
+  }
+}

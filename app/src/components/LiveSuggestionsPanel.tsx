@@ -161,8 +161,7 @@ export default function LiveSuggestionsPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
-      <button onClick={handleReloadSuggestions}
-        className="bg-blue-500 text-white p-2 rounded-md cursor-pointer">Reload Button</button>
+      <button onClick={handleReloadSuggestions} className="tm-btn-primary p-2">Reload Button</button>
       <div
         ref={suggestionsListRef}
         className="min-h-0 flex-1 overflow-y-auto"

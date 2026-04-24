@@ -138,21 +138,21 @@ export default function ChatPanel({
         <div className="flex h-full min-h-0 flex-col gap-3">
             <div
                 ref={messagesContainerRef}
-                className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-md border p-3"
+                className="tm-surface min-h-0 flex-1 space-y-2 overflow-y-auto p-3"
             >
                 {chatMessages.length === 0 ? (
-                    <p className="text-sm text-gray-500">Start a chat by sending a message.</p>
+                    <p className="tm-muted-text">Start a chat by sending a message.</p>
                 ) : (
                     chatMessages.map((message) => (
-                        <div key={message.id} className="rounded-md border border-gray-200 p-2">
-                            <p className="text-xs font-semibold uppercase text-gray-500">
+                        <div key={message.id} className="tm-card">
+                            <p className="tm-muted-meta">
                                 {message.role} · {message.timestamp}
                             </p>
                             <p className="text-sm">{message.content}</p>
                         </div>
                     ))
                 )}
-                {isChatLoading && <p className="text-sm text-gray-500">Assistant is thinking...</p>}
+                {isChatLoading && <p className="tm-muted-text">Assistant is thinking...</p>}
             </div>
 
             {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
@@ -164,14 +164,14 @@ export default function ChatPanel({
                     onChange={(event) => setDraft(event.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Type a message"
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                    className="tm-input"
                     disabled={isChatLoading}
                 />
                 <button
                     type="button"
                     onClick={handleSend}
                     disabled={isChatLoading}
-                    className="rounded-md bg-blue-500 px-3 py-2 text-sm text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                    className="tm-btn-primary"
                 >
                     Send
                 </button>

@@ -151,26 +151,35 @@ export default function MicTranscriptPanel({
   };
 
   return (
-    <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
+    <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className={`h-16 w-16 rounded-full text-white cursor-pointer transition-colors ${isListening ? 'bg-red-500' : 'bg-blue-500'
+          className={`relative flex h-16 w-16 cursor-pointer items-center justify-center rounded-full transition-colors ${isListening ? 'tm-record-active' : 'tm-record-idle'
             }`}
           onClick={handleClick}
           disabled={!isListening && !hasGroqKey}
           aria-label={isListening ? 'Stop recording' : 'Start recording'}
         >
-          {isListening ? 'Stop' : 'Start'}
+          {isListening && (
+            <span
+              className="absolute h-5 w-5 animate-ping rounded-full bg-white/70"
+              aria-hidden="true"
+            />
+          )}
+          <span
+            className={`relative h-4 w-4 rounded-full ${isListening ? 'bg-white' : 'bg-black'}`}
+            aria-hidden="true"
+          />
         </button>
-        <p className="text-sm text-gray-500">{isListening ? 'Recording' : 'Not recording'}</p>
+        <p className="tm-muted-text">{isListening ? 'Recording' : 'Not recording'}</p>
       </div>
       {!hasGroqKey && <p className="text-sm text-red-600">{missingKeyMessage}</p>}
       <div
         ref={transcriptContainerRef}
-        className="flex min-h-0 max-h-full flex-col gap-2 overflow-y-auto rounded-md border p-3"
+        className="tm-surface flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3"
       >
-        <p>Transcript</p>
+        <p className="tm-panel-title text-sm">Transcript</p>
         {transcriptEntries.map((entry) => (
           <TranscriptBox
             key={entry.id}
@@ -185,8 +194,8 @@ export default function MicTranscriptPanel({
 
 function TranscriptBox({ timestamp, transcript }: { timestamp: string, transcript: string }) {
   return (
-    <div className="border border-gray-300 p-2 rounded-md">
-      <p><span className="font-bold">{timestamp}</span> {transcript}</p>
+    <div className="tm-card">
+      <p><span className="font-bold text-slate-200">{timestamp}</span> {transcript}</p>
     </div>
   );
 }

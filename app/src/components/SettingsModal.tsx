@@ -30,10 +30,8 @@ export default function SettingsModal({ isOpen, onSave, onClose, settings }: Set
     return null;
   }
 
-  const buttonBaseClass = 'rounded-md px-3 py-2 text-sm cursor-pointer';
-  const inputClass =
-    'w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500';
-  const textareaClass = `${inputClass} min-h-[100px] resize-y font-mono text-xs`;
+  const inputClass = 'tm-input';
+  const textareaClass = `${inputClass} tm-textarea`;
 
   const parsedTimer = parsePositiveInt(String(draft.maxSuggestionsTimerSeconds));
   const parsedChatWindow = parsePositiveInt(String(draft.chatContextWindow));
@@ -80,12 +78,12 @@ export default function SettingsModal({ isOpen, onSave, onClose, settings }: Set
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-4 shadow-lg">
-        <h2 className="text-lg font-semibold text-gray-900">Settings</h2>
-        <p className="mt-1 text-sm text-gray-600">Edit API access, timing, prompts, and context windows.</p>
+      <div className="tm-panel max-h-[90vh] w-full max-w-2xl overflow-y-auto p-4 shadow-lg">
+        <h2 className="text-lg font-semibold text-slate-100">Settings</h2>
+        <p className="tm-muted-text mt-1">Edit API access, timing, prompts, and context windows.</p>
 
         <div className="mt-4">
-          <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="groq-key">
+          <label className="tm-label" htmlFor="groq-key">
             Groq API Key
           </label>
           <input
@@ -100,7 +98,7 @@ export default function SettingsModal({ isOpen, onSave, onClose, settings }: Set
 
         <div className="mt-4">
           <label
-            className="mb-1 block text-sm font-medium text-gray-700"
+            className="tm-label"
             htmlFor="max-suggestions-timer-seconds"
           >
             Max suggestions timer (seconds)
@@ -121,7 +119,7 @@ export default function SettingsModal({ isOpen, onSave, onClose, settings }: Set
         </div>
 
         <div className="mt-4">
-          <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="chat-context-window">
+          <label className="tm-label" htmlFor="chat-context-window">
             Chat transcript context window (lines)
           </label>
           <input
@@ -140,7 +138,7 @@ export default function SettingsModal({ isOpen, onSave, onClose, settings }: Set
         </div>
 
         <div className="mt-4">
-          <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="chat-system-prompt">
+          <label className="tm-label" htmlFor="chat-system-prompt">
             Chat system prompt
           </label>
           <textarea
@@ -153,7 +151,7 @@ export default function SettingsModal({ isOpen, onSave, onClose, settings }: Set
 
         <div className="mt-4">
           <label
-            className="mb-1 block text-sm font-medium text-gray-700"
+            className="tm-label"
             htmlFor="expansion-context-window"
           >
             Suggestion expansion transcript context window (lines)
@@ -175,7 +173,7 @@ export default function SettingsModal({ isOpen, onSave, onClose, settings }: Set
 
         <div className="mt-4">
           <label
-            className="mb-1 block text-sm font-medium text-gray-700"
+            className="tm-label"
             htmlFor="expansion-system-prompt"
           >
             Suggestion expansion system prompt
@@ -191,7 +189,7 @@ export default function SettingsModal({ isOpen, onSave, onClose, settings }: Set
         </div>
 
         <div className="mt-4">
-          <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="live-context-window">
+          <label className="tm-label" htmlFor="live-context-window">
             Live suggestions transcript context window (lines)
           </label>
           <input
@@ -211,7 +209,7 @@ export default function SettingsModal({ isOpen, onSave, onClose, settings }: Set
 
         <div className="mt-4">
           <label
-            className="mb-1 block text-sm font-medium text-gray-700"
+            className="tm-label"
             htmlFor="live-system-prompt"
           >
             Live suggestions system prompt
@@ -234,14 +232,14 @@ export default function SettingsModal({ isOpen, onSave, onClose, settings }: Set
           <button
             type="button"
             onClick={applyPromptDefaults}
-            className={`${buttonBaseClass} border border-gray-300 text-gray-700 hover:bg-gray-100`}
+            className="tm-btn-secondary"
           >
             Reset prompts and tunables to defaults
           </button>
           <button
             type="button"
             onClick={onClose}
-            className={`${buttonBaseClass} border border-gray-300 text-gray-700 hover:bg-gray-100`}
+            className="tm-btn-secondary"
           >
             Cancel
           </button>
@@ -249,7 +247,7 @@ export default function SettingsModal({ isOpen, onSave, onClose, settings }: Set
             type="button"
             disabled={!canSave}
             onClick={handleSave}
-            className={`${buttonBaseClass} bg-blue-500 text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60`}
+            className="tm-btn-primary"
           >
             Save
           </button>

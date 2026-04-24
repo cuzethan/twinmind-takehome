@@ -91,10 +91,10 @@ export default function App() {
   };
 
   return (
-    <div className="app flex flex-col h-screen">
+    <div className="app tm-app-shell flex h-screen flex-col">
       <header className="appHeader flex justify-end gap-2 p-2">
-        <button type="button" onClick={onExportSession} className="bg-blue-500 text-white p-2 rounded-md cursor-pointer">Export</button>
-        <button type="button" onClick={() => setIsSettingsOpen(true)} className="bg-blue-500 text-white p-2 rounded-md cursor-pointer">Settings</button>
+        <button type="button" onClick={onExportSession} className="tm-btn-primary p-2">Export</button>
+        <button type="button" onClick={() => setIsSettingsOpen(true)} className="tm-btn-primary p-2">Settings</button>
       </header>
 
       <main className="columnsContainer flex min-h-0 flex-1 gap-2 p-2 w-full">
@@ -109,7 +109,7 @@ export default function App() {
         <Column
           title="Live Suggestions"
           titleRight={
-            <span className="rounded bg-gray-200 px-2 py-1 text-xs text-gray-700">
+            <span className="tm-chip">
               auto-refreshes in {timerSeconds}s
             </span>
           }
