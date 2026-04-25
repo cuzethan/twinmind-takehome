@@ -1,20 +1,34 @@
-# Prompt design notes (draft)
+# Setup
+
+1. Clone this GitHub repository.
+2. Navigate to the app directory:
+   ```bash
+   cd app
+   ```
+3. Install dependencies and start the development server:
+   ```bash
+   npm install
+   npm run dev
+   ```
+4. After the app launches, open **Settings** and add your Groq API key.
+
+# Stack
+
+This project uses the following stack:
+
+- **Frontend:** React + TypeScript
+- **Build tooling:** Vite
+- **Styling:** Tailwind CSS
+- **HTTP client:** Axios
+- **AI services:** Groq API (Whisper transcription + chat completions)
+
+* Note - I decided intentionally did not implement a backend here because I felt like doing the API calls on React directly was sufficent and more clear for the demo.
+
+# Prompt design notes 
 
 ## First iteration
 
-This section captures early choices before deeper iteration from real usage and testing.
-
-### Context windows
-
-Live suggestions use a **small default context window** (two recent transcript entries). The idea is to anchor the model on what is happening *right now* in the meeting: quick, local nudges rather than a recap of the whole conversation. A wider window would dilute that signal and make suggestions feel less tied to the immediate beat.
-
-Chat and expanded-suggestion flows use a **much larger default window** (fifteen entries in this first pass). Those paths are meant for richer back-and-forth: answering questions, elaborating a clicked suggestion, and grounding answers in more transcript history. The extra context trades freshness for coherence when the user explicitly asks for depth. **Later defaults** for those two windows are documented under [Second iteration](#second-iteration).
-
-Both values are defaults in settings; they can be tuned per environment or preference.
-
-### Default system prompts
-
-The bundled default system prompts (live suggestions, chat, and suggestion expansion) were **initially produced with an AI assistant as scaffolding** so the app could be exercised end-to-end without spending a long cycle on copy. They are reasonable starting points, not final product voice; replace or refine them once you have real users and tone requirements.
+I just AI generated the prompts for my system, and although they performed better than I thought in terms of grabbing context, the formatting the AI spat out was not clear, and the expanded suggestions were not that helpful overall, since it had a bunch of rambling
 
 ## Second iteration
 
@@ -22,9 +36,9 @@ This pass tightens behavior in `src/config/appSettings.ts`: larger windows where
 
 ### Context windows
 
-- **Live suggestions:** the configurable **broader** transcript window still defaults to **two** lines (`liveSuggestionsContextWindow`), matching the first iteration’s “right now” goal. The API also sends a **high-priority** block: always the **last two** pieces of transcript, as a second user message (see `buildLiveSuggestionsApiMessages` in `src/config/util.ts`). Raising the setting widens the broader block while the high-priority tail stays two lines; the system prompt tells the model to weight that tail heavily when the two differ.
-- **Chat** default window increases from fifteen to **twenty** entries so the copilot has a bit more meeting history when the user chats explicitly.
-- **Suggestion expansion** (clicked card → longer help) increases from fifteen to **fifty** entries so expansion can lean on substantially more transcript when explaining or elaborating a single suggestion.
+- **Live suggestions:** the configurable **broader** transcript window defaults to **10** transcript blocks(`liveSuggestionsContextWindow`), matching the first iteration’s “right now” goal. The API also sends a **high-priority** block: always the **last two** pieces of transcript, as a second user message (see `buildLiveSuggestionsApiMessages` in `src/config/util.ts`). Raising the setting widens the broader block while the high-priority tail stays with the two latest transcript blocks; the system prompt tells the model to weight that tail heavily when the two differ.
+- **Chat** default window expanded to **twenty** entries so the open ai model has a bit more meeting history when the user chats explicitly.
+- **Suggestion expansion** (clicked card → longer help) increases to **fifty** entries so expansion can lean on substantially more transcript when explaining or elaborating a single suggestion.
 
 ### Suggestion expansion system prompt
 

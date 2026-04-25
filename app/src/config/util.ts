@@ -49,6 +49,7 @@ export function buildTranscriptContextBlock(
   );
 }
 
+//api prompt/messages builder for chat and suggestion expansion
 export function buildTranscriptAugmentedChatMessages(
   chatMessages: ChatMessage[],
   transcriptEntries: TranscriptEntry[],
@@ -94,6 +95,7 @@ function buildLiveSuggestionsUserPrompt(
 ${transcriptContext}`;
 }
 
+//api prompt/messages builder for live suggestions
 export function buildLiveSuggestionsApiMessages(
   transcriptEntries: TranscriptPromptEntry[],
   options: { systemPrompt: string; contextWindow: number }
